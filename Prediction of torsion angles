@@ -1,0 +1,45 @@
+import numpy as np
+
+# Function to calculate torsion angle
+def calculate_torsion_angle(p1, p2, p3, p4):
+    q1 = np.subtract(p2, p1)  # Vector from p1 to p2
+    q2 = np.subtract(p3, p2)  # Vector from p2 to p3
+    q3 = np.subtract(p4, p3)  # Vector from p3 to p4
+
+    q1_x_q2 = np.cross(q1, q2)  # Cross product of q1 and q2
+    q2_x_q3 = np.cross(q2, q3)  # Cross product of q2 and q3
+
+    n1 = q1_x_q2 / np.sqrt(np.dot(q1_x_q2, q1_x_q2))  # Normal vector of plane defined by q1 and q2
+    n2 = q2_x_q3 / np.sqrt(np.dot(q2_x_q3, q2_x_q3))  # Normal vector of plane defined by q2 and q3
+
+    torsion_angle = np.arccos(np.dot(n1, n2))  # Angle between normal vectors n1 and n2
+
+    return np.degrees(torsion_angle)
+
+# Ask user for PDB file location
+pdb_file_location = input("Enter the location of your PDB file: ")
+
+# Read PDB file and extract atomic coordinates
+with open(pdb_file_location, 'r') as f:
+    lines = f.readlines()
+atom_coordinates = []
+for line in lines:
+    if line.startswith('ATOM'):
+        x = float(line[30:38].strip())
+        y = float(line[38:46].strip())
+        z = float(line[46:54].strip())
+        atom_coordinates.append((x, y, z))
+
+# Calculate torsion angles for each set of four consecutive atoms
+torsion_angles = []
+for i in range(len(atom_coordinates) - 3):
+    p1, p2, p3, p4 = atom_coordinates[i], atom_coordinates[i+1], atom_coordinates[i+2], atom_coordinates[i+3]
+    torsion_angle = calculate_torsion_angle(p1, p2, p3, p4)
+    torsion_angles.append(torsion_angle)
+
+# Write torsion angles to output text file
+with open('output.txt', 'w') as f:
+    for angle in torsion_angles:
+        f.write(f"{angle}\n")
+
+print("Torsion angles have been written to output.txt.")
