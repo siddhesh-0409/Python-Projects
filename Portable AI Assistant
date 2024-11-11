@@ -1,0 +1,83 @@
+import tkinter as tk
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key="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"
+)
+
+
+def send_message():
+    user_input = user_entry.get()
+    conversation_history.append({"role": "user", "content": user_input})
+    user_entry.delete(0, tk.END)
+
+    chat_log.config(state=tk.NORMAL)
+    chat_log.insert(tk.END, "You: " + user_input + "\n")
+    chat_log.config(state=tk.DISABLED)
+
+    completion = client.chat.completions.create(
+        model="nvidia/llama-3.1-nemotron-70b-instruct",
+        messages=conversation_history,
+        temperature=0.5,
+        top_p=1,
+        max_tokens=1024,
+        stream=True
+    )
+
+    bot_response = ""
+    for chunk in completion:
+        if chunk.choices[0].delta.content is not None:
+            bot_response += chunk.choices[0].delta.content
+
+    conversation_history.append({"role": "assistant", "content": bot_response})
+
+    chat_log.config(state=tk.NORMAL)
+    chat_log.insert(tk.END, "Bot: " + bot_response + "\n")
+    chat_log.config(state=tk.DISABLED)
+    chat_log.yview(tk.END)
+
+
+def on_enter(event):
+    send_message()
+
+
+# Set up the main application window
+app = tk.Tk()
+app.title("AIbuddy4U")
+app.geometry("800x600")
+app.configure(bg="white")
+
+conversation_history = []
+
+# Create the heading
+heading = tk.Label(app, text="AIChatbot", font=("Helvetica", 24, "bold"), bg="white")
+heading.pack(pady=20)
+
+# Create the chat log display
+chat_log = tk.Text(app, bd=0, bg="lightgray", height="20", width="80", font="Arial", state=tk.DISABLED)
+chat_log.pack(padx=20, pady=10)
+chat_log.config(state=tk.NORMAL)
+chat_log.insert(tk.END, "Welcome to my chatbot! Type 'exit' to end the conversation.\n")
+chat_log.config(state=tk.DISABLED)
+
+# Create a scrollbar for the chat log
+scrollbar = tk.Scrollbar(app, command=chat_log.yview)
+chat_log['yscrollcommand'] = scrollbar.set
+scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+# Create the user input frame
+input_frame = tk.Frame(app, bg="white")
+input_frame.pack(padx=20, pady=10, fill="x")
+
+# Create the user input field
+user_entry = tk.Entry(input_frame, bd=1, bg="white", width="60", font="Arial")
+user_entry.pack(side=tk.LEFT, padx=10, pady=10, fill="x", expand=True)
+user_entry.bind("<Return>", on_enter)
+
+# Create the send button
+send_button = tk.Button(input_frame, text="Send", width="12", height="1", bd=0, bg="blue", activebackground="lightblue",
+                        fg="white", command=send_message)
+send_button.pack(side=tk.RIGHT, padx=10, pady=10)
+
+app.mainloop()
